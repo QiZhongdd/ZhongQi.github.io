@@ -11,10 +11,13 @@ github_repo: 'https://github.com/QiZhongdd/QiZhongdd.github.io' # you code repos
 
 # Sidebar settings
 sidebar: true # whether or not using Sidebar.
+sidebar-about-description: 'Fighting!'
+sidebar-avatar: /img/avatar_a.jpg # use absolute URL, seeing it's used in both `/` and `/about/`
+
 # SNS settings
 RSS: false
 # weibo_username:     qiubaiying
-github_username: QiZhongdd
+# github_username: QiZhongdd
 #twitter_username:   qiubaiying
 
 # Build settings
