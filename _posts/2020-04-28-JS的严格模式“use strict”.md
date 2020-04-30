@@ -1,3 +1,18 @@
+```
+---
+layout:     post
+title:      JS的严格模式“use strict”
+subtitle:   JS的严格模式“use strict”
+date:       2020-04-28
+author:     Qi
+header-img: img/404-bg.jpg
+catalog: 	 true
+tags:
+    - JS
+---
+
+```
+
 # 1.概述
 
 > 除了正常运行模式，ECMAscript 5 添加了第二种运行模式："严格模式"（strict mode）。顾名思义，这种模式使得 Javascript 在更严格的条件下运行。支持严格模式的浏览器:
