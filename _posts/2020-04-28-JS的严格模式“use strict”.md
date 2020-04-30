@@ -1,17 +1,14 @@
-```
 ---
-layout:     post
-title:      JS的严格模式“use strict”
-subtitle:   JS的严格模式“use strict”
-date:       2020-04-28
-author:     Qi
+layout: post
+title: JS的严格模式“use strict”
+subtitle: JS的严格模式“use strict”
+date: 2020-04-28
+author: Qi
 header-img: img/404-bg.jpg
-catalog: 	 true
+catalog: true
 tags:
-    - JS
+  - JS
 ---
-
-```
 
 # 1.概述
 
