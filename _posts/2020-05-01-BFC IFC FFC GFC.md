@@ -283,3 +283,7 @@ div 中包含 2 个 inline-block 的盒子，一个盒子中包含内容，另�
 
 > FFC(Flex Formatting Contexts)直译为"自适应格式化上下文"，display 值
 > 为 flex 或者 inline-flex 的元素将会生成自适应容器（flex container），
+
+# 5.参考
+
+https://lmjben.github.io/blog/css-ifc.html#css-%E5%86%85%E8%81%94%E5%85%83%E7%B4%A0%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98
