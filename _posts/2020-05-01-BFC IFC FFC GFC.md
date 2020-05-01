@@ -2,7 +2,7 @@
 layout: post
 title: 跨域相关的总结
 subtitle: 跨域相关的总结
-date: 2020-04-28
+date: 2020-05-01
 author: Qi
 header-img: img/404-bg.jpg
 catalog: true
