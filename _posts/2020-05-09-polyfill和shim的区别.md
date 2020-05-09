@@ -2,7 +2,7 @@
 layout: post
 title: polyfill跟shim的区别
 subtitle: polyfill跟shim的区别
-date: 2020-05-07
+date: 2020-05-09
 author: Qi
 header-img: img/404-bg.jpg
 catalog: true
