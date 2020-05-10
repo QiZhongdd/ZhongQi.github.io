@@ -5,9 +5,9 @@ header-img: img/post-bg-desk.jpg
 email: 1090018789@qq.com
 description: 'Every failure is leading towards success.'
 keyword: 'BY, BY Blog, Qi的博客, Qi,旗, 前端, Css, Js,Html'
-url: 'https://qizhongdd.github.io/' # your host, for absolute URL
+url: 'https://huge.github.io/' # your host, for absolute URL
 baseurl: '' # for example, '/blog' if your blog hosted on 'host/blog'
-github_repo: 'https://github.com/QiZhongdd/QiZhongdd.github.io' # you code repository
+github_repo: 'https://github.com/QiZhongdd/huge.github.io' # you code repository
 
 # Sidebar settings
 sidebar: true # whether or not using Sidebar.
