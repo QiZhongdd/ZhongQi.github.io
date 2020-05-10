@@ -1,7 +1,7 @@
 ---
 layout: post
-title: 2020-05-09-SharedArrayBuffer and Atomics（共享内存和原子）
-subtitle: 2020-05-09-SharedArrayBuffer and Atomics（共享内存和原子）
+title: SharedArrayBuffer and Atomics（共享内存和原子）
+subtitle: SharedArrayBuffer and Atomics（共享内存和原子）
 date: 2020-05-09
 author: Qi
 header-img: img/404-bg.jpg
