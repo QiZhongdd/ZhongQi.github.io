@@ -64,7 +64,7 @@ tags:
 </body>
 ```
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cec3c1b5cb14a?w=326&h=208&f=png&s=29757)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cec3c1b5cb14a?w=326&h=208&f=png&s=29757)
 
 - BFC 的区域不会与浮动元素重叠。相关的运用就是‘自适应两栏布局’
 
@@ -92,7 +92,7 @@ tags:
 </body>
 ```
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cec77b21a02b9?w=360&h=226&f=png&s=33022)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cec77b21a02b9?w=360&h=226&f=png&s=33022)
 
 - 计算 BFC 的高度时，浮动元素也参与计算。相关的运用‘清楚内部浮动’
 
@@ -118,7 +118,7 @@ tags:
 </body>
 ```
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171ceca7aa0e1442?w=302&h=206&f=png&s=5040)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171ceca7aa0e1442?w=302&h=206&f=png&s=5040)
 
 - Box 垂直方向的距离由 margin 决定。属于同一个 BFC 的两个相
   邻 Box 的 margin 会发生重叠.为了避免重叠，可以生成两个 BFC 区域
@@ -139,7 +139,7 @@ p {
 </body>
 ```
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cecfac1150c8d?w=300&h=382&f=png&s=77455)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cecfac1150c8d?w=300&h=382&f=png&s=77455)
 
 > 为了防止 margin 重叠，可以在 p 标签中在包裹一个 div，然后在生成一块 BFC 区域
 
@@ -166,7 +166,7 @@ p {
 </html>
 ```
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171ced13edc4c365?w=324&h=434&f=png&s=84583)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171ced13edc4c365?w=324&h=434&f=png&s=84583)
 
 # 2.IFC
 
@@ -177,7 +177,7 @@ p {
 > CSS 内联盒子模型主要是用来渲染内容的，它决定了页面中的文本，图片等内联元素如何显示。
 
 **内联盒子模型**
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cfc7a7dbf49d7?w=1438&h=562&f=png&s=298706)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cfc7a7dbf49d7?w=1438&h=562&f=png&s=298706)
 CSS 中的内联盒子模型可以分为以下几个部分：
 
 - 内容区域(content area):
@@ -191,14 +191,14 @@ CSS 中的内联盒子模型可以分为以下几个部分：
 **IFC 内部元素排列规则**
 
 我们先看一下行内元素的对齐线，也就是垂直方向上的对齐方式，可以通过 vertical-align 进行控制,默认是 vettical-align:baseline。
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cfea9f874b61e?w=1326&h=486&f=png&s=181186)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cfea9f874b61e?w=1326&h=486&f=png&s=181186)
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171cff1b7bb46223?w=1592&h=556&f=png&s=136794)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171cff1b7bb46223?w=1592&h=556&f=png&s=136794)
 
 **普通内联元素导致的图片间隙问题**
 
 第一个问题，也就是最常见的内联图片元素，导致的间隙问题，如图所示。
-![](https://user-gold-cdn.xitu.io/2020/5/1/171d005d068c3164?w=816&h=482&f=png&s=489554)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171d005d068c3164?w=816&h=482&f=png&s=489554)
 
 ```
 <div style="background-color:#e5edff;">
@@ -209,7 +209,7 @@ CSS 中的内联盒子模型可以分为以下几个部分：
 案例中有一个 div 和一张图片，可以看到图片底部到 div 底部出现了明显的间隙，这是为什么呢？
 
 我们先把图片后面增加一个文本节点，可以看到，其实是由于文本节点高度把这个 div 撑大了。。
-![](https://user-gold-cdn.xitu.io/2020/5/1/171d00a5b884482f?w=708&h=514&f=png&s=487190)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171d00a5b884482f?w=708&h=514&f=png&s=487190)
 
 ```
 <div style="background-color:#e5edff;">
@@ -235,7 +235,7 @@ CSS 中的内联盒子模型可以分为以下几个部分：
 
 **inline-block 内联元素导致的对齐问题**
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171d01e4fd38b597?w=878&h=514&f=png&s=31352)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171d01e4fd38b597?w=878&h=514&f=png&s=31352)
 
 ```
 //图中代码
@@ -252,11 +252,11 @@ CSS 中的内联盒子模型可以分为以下几个部分：
 ```
 
 div 中包含 2 个 inline-block 的盒子，一个盒子中包含内容，另一个却没有包含，呈现出来的样子就是一种错位的样子。
-![](https://user-gold-cdn.xitu.io/2020/5/1/171d0235a883d25b?w=826&h=462&f=png&s=29177)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171d0235a883d25b?w=826&h=462&f=png&s=29177)
 
 我们使用同样的方式，在父级 div 后面增加一个文本节点，并加上背景图。
 
-![](https://user-gold-cdn.xitu.io/2020/5/1/171d025600cac2ef?w=826&h=470&f=png&s=29289)
+![Image text](https://user-gold-cdn.xitu.io/2020/5/1/171d025600cac2ef?w=826&h=470&f=png&s=29289)
 
 现在第一个盒子的 content 文本，第二个盒子的底部，以及 x 的下边缘都在一条直线上。
 
