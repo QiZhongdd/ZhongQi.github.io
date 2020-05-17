@@ -1,7 +1,7 @@
 ---
 layout: post
-title: js原生实现-new
-subtitle: js原生实现-new
+title: js原生实现-new以及instanceof
+subtitle: js原生实现-new以及instanceof
 date: 2020-05-17
 author: Qi
 header-img: img/404-bg.jpg
