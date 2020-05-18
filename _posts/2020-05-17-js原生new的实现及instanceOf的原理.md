@@ -22,8 +22,8 @@ function new(Fn){
   var obj={};
   obj._proto_=Fn.prototype;
   let args=Array.prototype.slice.call(arguments,1);
-  Fn.apply(obj,args);
-  return obj
+  let result=Fn.apply(obj,args);
+  return typeof obj==='object'?result:obj
 }
 ```
 
