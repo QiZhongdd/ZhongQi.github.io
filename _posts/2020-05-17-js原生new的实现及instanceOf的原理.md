@@ -7,7 +7,7 @@ author: Qi
 header-img: img/404-bg.jpg
 catalog: true
 tags:
-  - js原生api实现
+  - js原生实现
 ---
 
 # new 的实现原理
@@ -32,6 +32,8 @@ function new(Fn){
 instanceof 主要是判断一个构造函数的 prototype 属性所指向的对象是否存在另外一个要检测对象的原型链上
 
 - 他的原理是判断 a 的原型链（**proto**）上是否有 B.prototype，若有返回 true
+
+```
   function instanceof(L,R){
   var o=R.prototype;
   L=L._proto_;
@@ -41,3 +43,4 @@ instanceof 主要是判断一个构造函数的 prototype 属性所指向的对�
   L=L._proto_;
   }
   }
+```
