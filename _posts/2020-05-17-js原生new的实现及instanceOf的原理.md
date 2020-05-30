@@ -23,7 +23,7 @@ function new(Fn){
   obj._proto_=Fn.prototype;
   let args=Array.prototype.slice.call(arguments,1);
   let result=Fn.apply(obj,args);
-  return typeof obj==='object'?result:obj
+  return typeof reusult==='object'?result:obj
 }
 ```
 
