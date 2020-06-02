@@ -15,7 +15,7 @@ tags:
 - 新建一个空对象。
 - 空对象的*proto*指向构造函数的 prototype.
 - 传入相应的参数执行函数并改变构造函数的指向。
-- 返回这个新对象
+- 返回函数的执行结果
 
 ```
 function new(Fn){
@@ -24,6 +24,16 @@ function new(Fn){
   let args=Array.prototype.slice.call(arguments,1);
   let result=Fn.apply(obj,args);
   return typeof reusult==='object'?result:obj
+}
+```
+
+# Object.create() 的实现原理
+
+```
+function create(obj){
+  let F=function(){};
+  F.prototype=obj;
+  return new F()
 }
 ```
 
