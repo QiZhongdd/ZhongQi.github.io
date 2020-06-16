@@ -100,6 +100,9 @@ worker.onmessage = function (e) {
 - Atomics.sub()
   将指定位置上的数组元素与给定的值相减，并返回相减前该元素的值
 
+# 总结：
+Atomics是保证多线程顺利进行的机制，假如当多线程操作同一数据时，会造成冲突。相当于两辆并行的车突然同一时间汇入一条线，难免会造成车祸。而Atomics能保证两辆并行的车在驶入同一条线时谁应该先执行，谁后执行。
+
 # 参考
 
 https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer

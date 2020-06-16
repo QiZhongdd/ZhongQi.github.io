@@ -214,6 +214,7 @@ fs.readFile(__filename, () => {
 - 当回调执行完毕后发现有 setImmediate,poll 阶段结束，进入 check 阶段执行 immediate.
 - 执行完 immediate 后进入下一个 eventloop 执行 setTimeout
 
+
 # 参考
 
 https://segmentfault.com/a/1190000013102056
