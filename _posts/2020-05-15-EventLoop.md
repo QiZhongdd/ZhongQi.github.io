@@ -88,6 +88,8 @@ console.log('script end')
 
 # Node 中的 EventLoop
 
+Node在处理I/O的时候也是单线程的，好处就是没有线程的切换和数据共享的问题。但实际上，在系统底层，非阻塞的I/O解决方案，只有Network I/O部分，linux底层使用epoll，windows下使用IOCP。文件等操作则没有很好的系统解决方案，因此为了模拟实现非阻塞的I/O方案，Node在libuv层启用了一个线程池，用于调用系统的阻塞式I/O。
+
 ![Image text](https://user-gold-cdn.xitu.io/2020/5/15/17218b5e45863604?w=1718&h=672&f=png&s=340138)
 
 根据上图，Node.js 的运行机制如下。
@@ -124,6 +126,37 @@ console.log('script end')
 **check 阶段**是用来执行 setImmediate
 
 **close callbacks** 关闭事件的回调阶段，比如上文提到的 socket 的关闭就是在此执行。执行完后进入下一个 eventloop;
+
+
+**观察者**
+每次事件循环，如何判断是否有事件处理呢，这个时候就得依靠观察者，每一个事件循环都有一个或者多个观察者，判断是否有事件要处理的过程就是向这些观察者询问是否有需要处理的事件。观察者主要有以下几种
+- idle观察者：效率最高，消费资源小，但会阻塞CPU的调用，process.nextTick就属于这类
+- IO观察者：精确度不高，可能有延迟执行的情况发生，且因为动用了红黑树，消耗的资源大，
+- check阶段：消耗的资源小，也不会造成阻塞，但效率低。
+
+执行顺序：同步任务>promise.then>IO观察者>check观察者
+![Image text](/img/WechatIMG9.png)
+
+```
+setTimeout(function () { 
+ console.log(1); 
+}, 0); 
+setImmediate(function () { 
+ console.log(2); 
+}); 
+process.nextTick(() => { 
+ console.log(3); 
+}); 
+new Promise((resovle,reject)=>{ 
+ console.log(4); 
+ resovle(4); 
+}).then(function(){ 
+ console.log(5); 
+}); 
+console.log(6);
+
+```
+执行结果：4，6，3，5，1，2
 
 **node11 版本之前和之后的差别**
 
