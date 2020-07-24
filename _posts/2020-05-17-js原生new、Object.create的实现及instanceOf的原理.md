@@ -18,12 +18,24 @@ tags:
 - 返回函数的执行结果
 
 ```
-function new(Fn){
-  var obj={};
-  obj._proto_=Fn.prototype;
-  let args=Array.prototype.slice.call(arguments,1);
-  let result=Fn.apply(obj,args);
-  return typeof reusult==='object'?result:obj
+function myNew(func){
+ return function(){
+  let obj={
+   _proto_:func.prototype
+  };
+  func.call(obj,arguments)
+  return obj;
+ }
+}
+
+function myNew2(func){
+  let obj={}
+  obj._proto_=func.prototype;
+  let ret=func.call(obj,Array.prototype.slice.call(arguments,1))
+  if ((typeof ret === "object" || typeof ret === "function") && ret !== null) {
+   return ret;
+  }
+  return res;
 }
 ```
 
