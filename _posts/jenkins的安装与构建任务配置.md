@@ -1,0 +1,117 @@
+---
+layout: post
+title: jenkins的安装与构建任务
+subtitle: jenkins的安装与构建任务
+date: 2020-07-25
+author: Qi
+header-img: img/404-bg.jpg
+catalog: true
+tags:
+  - 运维
+---
+
+# 简介
+
+Jenkins是一个开源软件项目，是基于Java开发的一种持续集成工具，用于监控持续重复的工作，旨在提供一个开放易用的软件平台，使软件的持续集成变成可能。主要功能持续的软件版本发布/测试项目。
+
+# jenkins的安装
+
+**安装jdk8+**
+- 进入[java官网](https://www.oracle.com/cn/downloads/)获取面向开发人员的jdk
+- 下载到本地后，用scp上传到远程的服务器
+```
+scp jdk-14.0.1_linux-x64_bin.rpm root@ip:/存放目录
+```
+- 进入目存放目录，用rpm安装jdk
+```
+rpm -ivh jdk-14.0.1_linux-x64_bin.rpm
+
+```
+**安装jenkins+**
+- 进入[jenkins](https://www.jenkins.io/zh/download/)获取对应版本的安装包，下载到本地，然后类似于java的方式安装jenkins。
+- 修改jenkins中的用户配置和端口，主要是为了防止权限冲突和端口冲突
+```
+vi /etc/sysconfig/jenkins
+
+JENKINS_USER="jenkins"
+
+JENKINS_PORT="9090
+
+```
+**启动jenkins**
+
+- 用jenkins命令启动
+```
+service jenkins start
+service jenkins status #查看是否启动成功
+```
+jenkins 相关的指令start|stop|status|try-restart|restart|force-reload|reload|probe
+
+- 在浏览器中输入ip地址:jenkins端口打开，然后按照指示运行及安装推荐的插件即可
+![Image text](/img/WechatIMG499.png)
+
+
+# 创建任务与构建
+
+**创建任务**
+
+- 点击新建任务,填入任务名称以及选择自由风格创建任务
+![Image text](/img/WechatIMG488.png)
+
+- 选择github项目，将项目所在的url填入地址
+![Image text](/img/WechatIMG797.png)
+
+- 源码管理填入对应的git的地址、凭据、分支
+![Image text](/img/WechatIMG832.png)
+
+![Image text](/img/WechatIMG229.png)
+
+添加git的地址可能出现该错误：Failed to connect to repository : Error performing command: git ls-remote -h ….需要在系统上用yuan 安装git
+
+```
+yum install git
+```
+然后打开jenkins主页面–>系统管理–>全局工具配置，在git一栏中name使用git即可,Path to Git executable 中填写git的地址,(即whereis git的结果)
+保存即可.
+
+**安装node**
+
+- 安装node插件
+进入系统管理-》插件管理-》可选插件搜索	NodeJS Plugin->安装
+
+- 对node进行配置
+
+打开jenkins主页面–>系统管理–>全局工具配置-》NodeJS 安装->填写别名-》选择安装版本
+![Image text](/img/WechatIMG109.png)
+
+
+**对任务进行构建环境配置**
+- 添加构建配置中选择Excute NodeJS script，选择安装的node
+![Image text](/img/WechatIMG113.png)
+
+- 添加构建配置选择执行shell，添加构建项目的命令
+
+![Image text](/img/WechatIMG152.png)
+
+**构建任务**
+- 点击构建任务，
+![Image text](/img/WechatIMG123.png)
+
+- 点击任务可以查看控制台输出
+![Image text](/img/WechatIMG154.png)
+
+# 配置nginx反向代理
+```
+server {
+      listen 8000; # 监听端口
+      server_name _;
+      location / {
+        # 这里我这里指向 jenkins 构建的目录，也可以在构建时的 shell 将文件移动要其他地方。
+        root  /var/lib/jenkins/workspace/koa/dist;
+        try_files $uri $uri/ index.html;
+      }
+}
+```
+
+
+
