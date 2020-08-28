@@ -160,10 +160,6 @@ const memoizedCallback = useCallback(
 **useReducer**
 useReducer 实现了类似 redux 的功能
 
-- state 用来存储对应的状态
-- dispatch 用来触发 reducer 修改状态
-- reducer 管理 action，触发后修改状态
-- initState 是 state 的初始状态
 
 ```
 const initialState = {count: 0};
