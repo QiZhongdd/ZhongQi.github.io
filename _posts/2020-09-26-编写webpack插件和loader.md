@@ -60,6 +60,7 @@ module.exports = ConsoleLogOnBuildWebpackPlugin;
 ```
 
 - tapAsync
+
 ```
 const pluginName = 'ConsoleLogOnBuildWebpackPlugin';
 
