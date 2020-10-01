@@ -57,9 +57,11 @@ class ConsoleLogOnBuildWebpackPlugin {
     }
 }
 module.exports = ConsoleLogOnBuildWebpackPlugin;
+
 ```
 
 - tapAsync
+
 
 ```
 const pluginName = 'ConsoleLogOnBuildWebpackPlugin';
@@ -74,6 +76,7 @@ class ConsoleLogOnBuildWebpackPlugin {
     }
 }
 module.exports = ConsoleLogOnBuildWebpackPlugin;
+
 ```
 
 **实现htmlAfterPlugin**
