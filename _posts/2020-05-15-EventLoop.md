@@ -7,7 +7,7 @@ author: Qi
 header-img: img/404-bg.jpg
 catalog: true
 tags:
-  - js
+  - js基础
 ---
 
 # 宏任务（MacroTask）和微任务(MicroTask)
@@ -247,6 +247,10 @@ fs.readFile(__filename, () => {
 - 当回调执行完毕后发现有 setImmediate,poll 阶段结束，进入 check 阶段执行 immediate.
 - 执行完 immediate 后进入下一个 eventloop 执行 setTimeout
 
+# 总结
+当js引擎遇到⼀个异步事件后，不会⼀直等到异步事件的返回，⽽是先将异步事件进⾏挂起，会被加⼊到事件队列中。当
+执⾏队列执⾏完毕，主线程处于闲置状态时，会去异步队列那抽取最先被推⼊队列中的异步事件，放⼊执⾏栈中，
+执⾏其中的回调同步代码。如此反复，这样就形成了⼀个⽆限的循环。这就是这个过程被称为“事件循环
 
 # 参考
 

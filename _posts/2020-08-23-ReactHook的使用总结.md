@@ -1,7 +1,7 @@
 ---
 layout: post
 title: React Hook的使用总结
-subtitle:React Hook的使用总结
+subtitle: React Hook的使用总结
 date: 2020-08-22
 author: Qi
 header-img: img/404-bg.jpg

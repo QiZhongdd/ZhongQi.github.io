@@ -8,6 +8,7 @@ header-img: img/404-bg.jpg
 catalog: true
 tags:
   - js原生实现
+  - js基础
 ---
 
 # new 的实现原理

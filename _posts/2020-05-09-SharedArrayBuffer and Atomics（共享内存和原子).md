@@ -7,7 +7,7 @@ author: Qi
 header-img: img/404-bg.jpg
 catalog: true
 tags:
-  - ES新特性
+  - js基础
 ---
 
 # 简述

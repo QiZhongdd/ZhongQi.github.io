@@ -7,7 +7,7 @@ author: Qi
 header-img: img/404-bg.jpg
 catalog: true
 tags:
-  - js
+  - js基础
 ---
 
 # 简述
