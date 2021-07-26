@@ -16,17 +16,18 @@ tags:
 npm install -g yo generator-code
 
 ```
+
 - 然后运行 yo code 就能生成项目文件
-- 按下F5能新建窗口进行调试
-- 用Common+shift+P 输入启动命令就能测试
+- 按下 F5 能新建窗口进行调试
+- 用 Common+shift+P 输入启动命令就能测试
 
-# 入口文件extension.ts
+# 入口文件 extension.ts
 
-extension.ts是入口文件，主要有两个生命周期
+extension.ts 是入口文件，主要有两个生命周期
 
 - active: 插件唤醒的时候执行
 - deactivate: 插件卸载的时候执行
-- 在active的时候给命令绑定一个函数
+- 在 active 的时候给命令绑定一个函数
 
 ```
 //当运行helloword.helloWorld的时候可以执行下面的函数
@@ -38,10 +39,10 @@ let disposable = vscode.commands.registerCommand('helloword.helloWorld', () => {
 
 ```
 
-# package.json相关字段说明
+# package.json 相关字段说明
 
-- activationEvents运行哪些命令唤醒插件
-- contributes.commands命令的描述
+- activationEvents 运行哪些命令唤醒插件
+- contributes.commands 命令的描述
 
 ```
  "commands": [{
@@ -51,11 +52,12 @@ let disposable = vscode.commands.registerCommand('helloword.helloWorld', () => {
 
 ```
 
-- menu控制命令在何时显示
+- menu 控制命令在何时显示
 
 有时候我们希望命令只在特定场景下作展示，比如只在特定语言或指定配置下展示命令给用户
 
 ```
+
    "menus": {
             "commandPalette": [{
                 "command": "extension.sayHello",
