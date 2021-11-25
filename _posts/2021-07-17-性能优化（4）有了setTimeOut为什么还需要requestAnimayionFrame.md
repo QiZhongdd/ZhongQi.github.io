@@ -29,11 +29,11 @@ tags:
 
 # window.requestIdleCallback()
 
-VSync 同步周期是 16.66（1/60）毫秒，gpu 每发送一个 vsync 信号代表着进入下一帧。合成线程会提交给渲染主线程提交完成合成的消息。如何合成的速度非常快，比如用来 8ms，但发送下一个 vsync 的信号是 16.66ms，这样渲染主线程就会有一段空闲的时间，那么就可以在这段空闲时间内执行一些不那么紧急的任务，比如 V8 的垃圾回收，或者通过 window.requestIdleCallback 设置的回调任务等。
+VSync 同步周期是 16.66（1/60）毫秒，gpu 每接收一个 vsync 信号代表着进入下一帧。合成线程会提交给渲染主线程提交完成合成的消息。如何合成的速度非常快，比如用来 8ms，但发送下一个 vsync 的信号是 16.66ms，这样渲染主线程就会有一段空闲的时间，那么就可以在这段空闲时间内执行一些不那么紧急的任务，比如 V8 的垃圾回收，或者通过 window.requestIdleCallback 设置的回调任务等。
 
 # window.requestAnimation()
 
-css 的动画是跟浏览器的渲染流程处理的，CSS 动画是由渲染进程自动处理的，所以渲染进程会让 CSS 渲染每帧动画的过程与 VSync 的时钟保持一致, 这样就能保证 CSS 动画的高效率执行。
+css 的动画是跟浏览器的渲染流程处理的，所以渲染进程会让 CSS 渲染每帧动画的过程与 VSync 的时钟保持一致, 这样就能保证 CSS 动画的高效率执行。
 
 但 js 是由用户手动控制的，如果采用 setTimeout 来触发动画每帧的绘制，那么其绘制时机是很难和 VSync 时钟保持一致的，所以 JavaScript 中又引入了 window.requestAnimationFrame，用来和 VSync 的时钟周期同步。
 应该说 raf 的回调任务会在每一帧的开始执行
