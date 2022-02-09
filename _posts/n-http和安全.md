@@ -4,18 +4,35 @@
 206：表示客户端发起了范围请求，并且服务器成功执行了get请求，响应报文中包含了Content-range范围请求
 301：永久性重定向
 302暂时性重定向
-303表示请求资源换了地方，必须使用get定向请求资源，与302相比，303明确使用get方法
+303表示请求资源换了地方，必须使用get定向请求资源，303明确使用get方法
 304协商缓存状态
 400表示请求报文中存在错误
 401未经许可，需要http认证
 403服务端禁止访问
 404路径错误
-特殊状态码：413：请求实体过大，超过了服务器能够处理请求的范围。一般是在上传文件的时候才会出现。可以配置nginx的client-max-body-size。
+405请求方法不对
+413：请求实体过大，超过了服务器能够处理请求的范围。一般是在上传文件的时候才会出现。可以配置nginx的client-max-body-size。
 500请求服务端时出现错误
+501 服务端不能识别请求方法
 502状态码是服务器（不一定是Web服务器）作为网关或代理，以满足客户的要求来访问所请求的URL 。 此服务器从上游服务器收到无效响应.
-503服务端超负荷或正在维护，无法处理
+503：服务端超负荷,接受的流量比较大
 504：服务器作为网关或者代理服务器向上游发起请求时，未能及时响应.504一般都是和nginx的配置有关。比如nginx设置了超时时间，当在超时时间内没有收到请求就会给客户端返回504
 
+
+常见的请求方法：
+- get 获取内容
+- post 用于新增内容，或者上传文件
+- head请求，类似于get，但不会返回响应体，只能获取到报头
+- put 用于修改内容，将内容整体覆盖
+- patch请求，也是修改内容，但只是修改部分
+- delete 删除内容
+- target 用于回显请求，一般用于测试
+- options 请求，用于服务端验证实际请求是否合法
+- connect 请求预留给http1.1能够将链接改为管道方式的代理服务器
+
+options请求
+options请求被称为预检请求，服务端用来验证实际请求是否合法，预见请求会发送两个请求头，Access-control-request-headers和Access-control-request-methods表示请求的方法和请求头
+响应头有
 
 http：在http0.9的时候http只能发送get请求，并且只能响应Html字符串，服务器发送完毕后Tcp就会断开。在http1.0的时候，不仅可以传输文字，还可以传输图像、视频，二进制等，同时还引进了get、post、head请求。请求信息和响应信息也发生了改变，除了数据以外，还有头信息。但http1.0缺点是每个Tcp只能发送一个请求，发送完毕TCP就关闭，为了解决这问题，就出现了非标准字段connection:keep-alive。在http1.1的时候引入了持久链接，不用再标明connection:keep-alive就可持久化链接，当客户端和服务端发现对方一段时间没有活动，就主动关闭。对于同一个域名大多数浏览器只支持连接6个持久化链接。并且Http1.1还引入了管道机制，所谓的管道机制就是只在同一个TCP连接里面能发送多个http请求，但是服务器还是按顺序响应，如果一个请求阻塞，后面的请求都会阻塞，这样就会造成对头堵塞。同时在http1.1一个tcp可以传输多个响应，为了区分数据包属于哪个响应，使用了content-length标识信息。http1.1还支持流式传输，通过设置Transfer-Encoding: chunked就可以支持流式传输。并且添加PUT、PATCH、HEAD、 OPTIONS、DELETE等请求方法。
 
@@ -66,6 +83,19 @@ DSA 证书不再允许在 TLS 1.3 中使用
 第二次握手：服务器收到syn报文，必须确认客户端的syn,同时自己发送一个syn+ack包，此时服务器进入syn_receive状态
 第三次握手：客户端收到syn+ack报文后，向服务端发送一个ack报文（ack=k+1）,此包发送完毕，服务端和客户端进入establish状态
 
+面试时可能会问的一个问题就是，明明两次握手就能确定的连接，为什么需要三次握手？
+
+有一很多不可控的因素，比如网络原因，当客户端发去请求链接的时候，服务端可能很长时间才收到请求。这个时候客户端因为等待响应很久了，就会认为服务端没有收到请求，把这个请求废弃掉，重新发起请求。而服务端又等了很久，接受了废弃请求，发起响应的同时又开启了一个tcp的端口，在那里呆等着客户端
+
+这是因为客户端发起请求的时候可能因为网络的原因造成第一次请求隔了很久才到达服务端，这个时候客户端已经等待响应等了很久，之前发起的请求已超时，已经被客户端废弃掉不再继续守着监听了。
+
+然而服务端过了很久，收到了废弃的延迟请求，发起回应的同时又开启了一个新的 TCP 连接端口，在那里呆等客户端。而服务端能维护的 TCP 连接是有限的，这种闲置的无用链接会造成服务端的资源浪费。
+因此在服务端发送了 SYN 和 ACK 响应后，需要收到客户端接的再次确认，双方连接才能正式建立起来。三次握手就是为了规避这种由于网络延迟而导致服务器额外开销的问题。
+
+
+
+
+
 **syn是握手信号，ack是握手信号**
 
 # tcp:四次挥手
@@ -107,6 +137,19 @@ IP地址通过DNS解析获取，DNS解析首先会从缓存中查看是否解析
 cdn的解析主要有以下几个步骤，在没有缓存的情况下，首先会向localDns发起域名解析请求，localDns会向根域名服务器发起请求，根域名服务器会返回授权服务器所在的地址，localDns会向域名授权服务器发起请求，域名授权服务器会返回域名记录，一般是CNAME,所谓的CNAME一般是指能根据一个域名获取到ip。获取到域名记录后，智能DNS会根据自己的算法和策略去解析最适合用户cdn节点的ip返回给localDns，localDns会返回给用户，然后发起请求获取地址。简单点说就是通过修改dns解析，通过dns引导用户到cache服务器获取资源，加快请求速度。整个过程最重要的设备就是智能DNS,他能根据自己的算法和策略获取到最适合的cdn节点，同时能够与每个cdn节点保持联系，获取cdn的压力和相关的状态信息。
 
 
+
+**cookie的值**
+
+- name和value是一个键值对。Name是Cookie的名称，Cookie一旦创建，名称便不可更改，一般名称不区分大小写；Value是该名称对应的Cookie的值
+- Domain决定Cookie在哪个域是有效的
+- Path是Cookie的有效路径，和Domain类似，也对子路径生效
+- Expires和Max-age均为Cookie的有效期,Expires是该Cookie被删除时的时间戳, Max-age也是Cookie的有效期，但它的单位为秒，即多少秒之后失效.
+- Szie是此Cookie的大小。在所有浏览器中，任何cookie大小超过限制都被忽略,各个浏览器对Cookie的最大值和最大数目有不同的限制
+- HttpOnly值为 true 或 false,若设置为true，则不允许通过脚本document.cookie去更改这个值
+- Secure为Cookie的安全属性，若设置为true，则浏览器只会在HTTPS和SSL等安全协议中传输此Cookie，不会在不安全的HTTP协议中传输此Cookie。
+- SameSite用来限制第三方 Cookie，从而减少安全风险。具有samesite的特性cookie只有在网站打开的时候才发送到网站。iframe嵌套的时候不会发送
+- Priority优先级，chrome的提案，定义了三种优先级，Low/Medium/High，当cookie数量超出时，低优先级的cookie会被优先清除。
+
 # 中间人攻击
 客户端发起请求被中间人服务器劫持，中间人服务器会返回自己的证书给客户端。客户端在收到证书后首先会创建随机数，然后用证书中的公钥对随机数加密，同时用随机数对传输内容进行加密后，随机数和传输内容会一起发给中间人服务器，中间人服务器对随机数进行解密，获取到随机数后再对传输内容进行解密，这样中间人就可以查看或者篡改内容。收到内容后，中间人会把内容发送给服务器，中间人和服务端的请求是合法的，所以服务端会将响应内容返回给中间人。由于中间人与服务端建立了对称加密，所以可以对响应内容进行查看，最后中间人在把响应内容返回给客户端
 
@@ -120,5 +163,17 @@ csrf：跨站请求伪造。攻击者引导用户进入第三方网站，在第�
 
 sql注入：是指web应用程序对用户输入数据的合法性没有判断或过滤不严。攻击者可以在web端事先定义好查询语句的结尾上添加sql语句，在管理员不知道的情况下执行恶意操作，以此实现获取数据库的信息
 
+劫持：诱导用户点击某个button，但上面还有一层透明的iframe。用户实际点击的是iframe里面的元素，然后跳转。防御手段header头。x-frame-options、阻止顶底导航
 
+```
+window.onbeforeunload = function() {
+  return false;
+};
 
+```
+
+**options请求**
+
+options 请求被称为预检查请求，服务端可以根据预检请求判断接下来是否接受下一次请求。预检请求头有Access-Control-Request-Method和Access-Control-Request-Header表示实际请求的方法和请求头。服务端的预检响应有Access-Control-Allow-Methods返回了服务端允许的请求，包含GET/HEAD/PUT/PATCH/POST/DELETE、Access-Control-Allow-Credentials、Access-Control-Allow-Origin	允许跨域请求的域名，这个可以在服务端配置一些信任的域名白名单、Access-Control-Request-Headers	客户端请求所携带的自定义首部字段content-type。
+ 跨域请求时，OPTIONS请求触发条件请求方法为PUT/DELETE/CONNECT/OPTIONS/TRACE/PATCH，人为设置除了以下集合外的字段Accept/Accept-Language/Content-Language/Content-Type/DPR/Downlink/Save-Data/Viewport-Width/Width，. Content-Type 的值不属于下列之一application/x-www-form-urlencoded、multipart/form-data、text/plain。
+ 优化OPTIONS请求：Access-Control-Max-Age设置缓存时间或者避免触发。

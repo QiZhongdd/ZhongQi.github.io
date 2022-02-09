@@ -1,4 +1,5 @@
 **浏览器中的事件循环**
+
 简单的说event loop就是调用栈不断的从消息队列和任务队列读取并执行任务的过程。
 渲染进程只有一个主线程用来执行js任务和ui的渲染，要让这些任务顺利执行就需要有一个统一的机制就是事件循环与消息队列。假如没有事件循环，线程在执行任务期间有新的任务添加进来，线程是没有办法执行新添加的任务，所以引入了事件循环，循环一次结束后判断有没有新的任务。而传入的新任务就需要由消息队列去从其他线程进行接受。如果在执行消息队列的任务时有优先级较高的任务，那么会将优先级较高的任务添加到任务队列，待执行完当前消息队列的任务会优先执行任务队列的任务再去执行其他消息队列中的任务。消息队列中的任务对应的就是宏任务，任务队列对应的就是微任务。宏任务有 渲染事件（如解析 DOM、计算布局、绘制）、用户的交互、setTimeOut、JavaScript 脚本执行事件、网路请求完成、文件对的读写，微任务有promise、mutaionobserver。宏任务相比微任务，宏任务的时间粒度比较大，执行时间不能精确控制，对一些高实时性的任务就不能满足了，比如监听dom的变化，mutationobserver利用的就是异步+微任务的原理。同时在同一个宏任务中，创建的微任务的执行优先级是高于微任务的。
 
@@ -9,7 +10,8 @@ libuv中的事件循环有以下阶段：
 - updateTime:获取以下系统时间，以保证之后的timer有记时的标的，避免过多的系统调用影响性能
 - timers:检查是否有timers，执行到期的的timer类似setTimeout和setInterval
 - IO/CALLBACK:执行到期I/O事件的回调，比如网络i/o，文件i/o。
-- idle/prepare：这个阶段会处理一下内部的操作，同时调用各平台提供的i/o多路复用接口，最多等到timeout时间，在timeout时间内返回会立即执行。这个阶段会维护自己的状态，在适当的条件下可能会堵塞
+- idle/prepare：这个阶段会处理一下内部的操作，如果节点处理为active状态，每次事件循环都会执行
+- IO/poll阶段同时调用各平台提供的i/o多路复用接口，执行IO的回调，轮询队列中的事件，如果poll队列不为空，那么会同步执行队列中的任务，知道队列为空，如果poll队列为空·，有setImmediate直接进入check阶段。没有就等到callback添加到队列然后执行。当然如果有到期的timer那么会执行到期的timer
 - check阶段：执行setImmediate
 - close/callback,关闭I/O的操作，比如文件描述符的关闭、连接断开等
 
@@ -63,7 +65,7 @@ function co(generator){
   return new Promise(function(resolve){
     const gen=generator();
     function onFulfilled(res){
-      const {done,value:promise}=gen.next();
+      const {done,value:promise}=gen.next(res);
       if(done)resolve()
       promise&&promise.then(onFulfilled)
     }
@@ -74,14 +76,15 @@ co(gen)
 
 ```
 
+
 **实现一个promise.finally**
 
 ```
 Promise.prototype.finally=function(cb){
  const p=this.constructor;
  return this.then(
-   value=>p.then(cb()).then(()=>value);
-   reason=>p.then(cb()).then(()=>{throw reason})
+   value=>p.then(cb()).then(()=>value),
+   err=>p.then(cb()).then(()=>throw err)
  )
 }
 
@@ -303,4 +306,12 @@ async function async1() {
 
 ```
 
+Array.prototype.call=function(context,...args){
+  const fn=symbol();
+  context[fn]=this;
+  const res=context[fn](...args);
+
+  context.delete(fn);
+  return res;
+}
 

@@ -65,6 +65,7 @@ v8为了提高在内存中查找对象属性的效率，通过给每个对象建
 
 实现一个没有延时的定时器
 postmessage类似于settimeout，是宏任务
+
 ```
 (function(){
  let fns=[];
@@ -74,14 +75,16 @@ postmessage类似于settimeout，是宏任务
    window.postMessage(messageName,'*')
  }
  function handler(evt){
-   if(evt.source==='window'&&evt.data===messageName){
-     evt.stopPropagation();
-     let fn=fns.shift()
-     fn()
-   }
+  if(evt.data===messageName){
+    evt.stopPropagation();
+    const fn=fns.shift();
+    fn();
+  }
  }
+
  window.addEventListener('message',handler,false);
  window.setZeroTimeout=setZeroTimeout
+
 })()
 
 ```

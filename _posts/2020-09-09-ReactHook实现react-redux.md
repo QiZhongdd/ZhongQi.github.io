@@ -122,9 +122,7 @@ function createStore(initState={},reducer,middleWares){
     function compose(...fns){
         if(fns.length===0)return args=>args;
         if(fns.length===1)return fns[0];
-        var fn=function(...args){
-            return fns.reduce((a,b)=>a(b(...args)))
-        }
+        const fn=fns.reduce((a,b)=>(...args)=>a(b(...args)));
         return fn
     }
     

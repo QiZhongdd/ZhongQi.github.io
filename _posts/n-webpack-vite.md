@@ -11,14 +11,8 @@ webpack的构建流程
 - 使用Template基于Compiliation的数据生成结果代码。
 
 
-webpack的优化
-- 使用多线程构建thread-loader、happy-pack已经废弃，
-- 充分利用缓存，比如babel-loader开启缓存、terser-webpack-plugin开启缓存、cache-loader、hard-source-webpacl-plugin,webpack5默认有cache.
-- 使用externals忽略需要构建的库，然后采用cdn引入
-- 缩小查找范围、比如loader中添加exclude和include、使用别名、noParse忽略需要解析的库，比如jq、resolve.module指明存放的第三方模块路径。
-- 利用代码分割将公共资源抽出，减少代码体积
-- 对代码进行压缩，比如利用cssnao压缩css。
-- webpack-deep-scope-plugin深度tree-shaking，tree-shaing的话不能删除class和function中的没有引用的属性。webpack-deep-scope-plugin可以做到。
+
+
 
 webpack热更新原理
 
@@ -47,6 +41,17 @@ webpack 插件
 
 - 事件钩子会有不同的类型 SyncBailHook,AsyncSeriesHook,SyncHook 等,是基于tapable。
 
+
+
+
+**tabable**
+细说的话就得从webpack cli说起了先检查webpack-cli，如果没有的话就去install，install需要判断是否有yarn活install，yarn 可以通过yarn log判断。然后webpack cli对entry做初始化，判断是单模块还是多模块。初始化模块后要用compile，compile是基于tapable的，在compile里面模块之间的调度都是通过tapable的hook完成的，hook有异步的也有同步的。然后new compiliaton，看你是单入口还是多入口。如果是单入口的话，就执行单入口的独立脚步。在执行之前需要执行所有的插件，因为plugin有compilation刚初始化的hooks，如果使用plugin比较早的生命周期的话那吗就出发了，运用call 绑定compoiliation把compilation丢进去了。如果没有的话那么comliliation回去分析chunk，这是webpack最核心的了。chunk有同步和异步的，然后去parser模块分析依赖，分析完毕后交给依赖模块和module模块，最后生成template生成我们的代码。
+
+
+**vue文件依赖解析**
+使用vue-loader，然后分析vue里面的东西，要装vue-template编译template模块转换成虚拟dom，然后分析vue的style模块，如果分析到style模块就交给自己的style,如果分析到了script模块，那么就能交给webpack去编译，相当于把webpack模块拆开了
+
+
 **实现htmlAfterPlugin**
 
 改插件基于html-webpack-plugin插件，html-webpack-plugin在想html文件中是无法改变相关css和js的插入位置的，
@@ -54,6 +59,9 @@ webpack 插件
 - 创建基于compiler.hooks.compilation的插件
 - 然后在html-webpack-plugin的beforeAssetTagGeneration钩子获取到相关需要注入的资源
 - 获取html-webpack-plugin的beforeEmit钩子，该钩子是处于注入到html前，能够获取到html内容，对相关html内容进行替换
+
+
+
 
 
 ```
@@ -85,7 +93,9 @@ class HtmlAfterPlugin {
     this.cssarr = [];
   }
   apply(compiler) {
+    // compilation 创建之后执行。
     compiler.hooks.compilation.tap(pluginName, (compilation) => {
+      // 在标签生成之前
       HtmlWebpackPlugin.getHooks(compilation).beforeAssetTagGeneration.tapAsync(
         pluginName,
         (htmlPligunData, cb) => {
@@ -95,6 +105,7 @@ class HtmlAfterPlugin {
           cb(null, htmlPligunData);
         }
       );
+      // 插入标签内容
       HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
         pluginName,
         (data, cb) => {
@@ -115,6 +126,11 @@ module.exports = HtmlAfterPlugin;
 
 
 ```
+
+
+
+
+
 
 
 # Loader
@@ -145,15 +161,13 @@ ModuleFeduration想做的事便是把多个无相互依赖、单独部署的应�
 
 
 
-
-
 # Vite只做两件事
 
-首先，一个用于承载资源服务的service；
+首先，建立一个用于承载资源服务的service；
 
 第二个是使用esbuild预构建npm依赖包。之后就一直躺着，直到浏览器以http方式发送ESM规范的模块请求，Vite才开始“按需编译”被请求的模块。Vite 预设的前提是：现代浏览器大多数已经原生支持 ESM 规范， 开发环境下已经没有太大必要为了低版本兼容把大量的时间花在编译打包上了！
 
-这么一对比，Webpack 是啥都做了，浏览器只要运行编译好的低版本(es5)代码就行；而 Vite 只处理问题的一部分，剩下的事情交由浏览器自行处理，那
+这么一对比，Webpack 是啥都做了，浏览器只要运行编译好的低版本(es5)代码就行；而 Vite 只处理问题的一部分，剩下的事情交由浏览器自行处理，
 
 Vite 还有很多值得一提的性能优化，整体梳理一下：
 
@@ -194,5 +208,37 @@ Esbuild 是一个非常新的模块打包工具，它提供了与 Webpack、Roll
 **esbuild看法**
 
 Esbuild 当下与未来都不能替代 Webpack，它不适合直接用于生产环境，而更适合作为一种偏底层的模块打包工具，需要在它的基础上二次封装，扩展出一套既兼顾性能又有完备工程化能力的工具链，例如 Snowpack, Vite, SvelteKit, Remix Run 等。
+
+
+**tree-shaking原理**
+
+使用tree-shaking首先需要满足三个条件，遵循esm模块规范，esm模块规范要求所有的导入导出语句只能出现在模块顶层，且导入导出的模块名必须为字符串常量，ESM 下模块之间的依赖关系是高度确定的，与运行状态无关，编译工具只需要对 ESM 模块做静态分析，就可以从代码字面量中推断出哪些模块值未曾被其它模块使用，这是实现 Tree Shaking 技术的必要条件。配置optimization.usedExports为true启动标记功能，启动代码优化功能，需要在为生产环境使用、 optimization.minimize = true和 optimization.minimizer数组。
+Webpack 中，Tree-shaking 的实现一是先「标记」出模块导出值中哪些没有被用过，二是使用 Terser 删掉这些没被用到的导出语句。过程大致可划分为三个步骤：
+Make（构建阶段） 阶段，收集模块导出变量并记录到模块依赖关系图中
+Seal（打包） 阶段，遍历模块依赖关系图,标记模块导出的变量有没有被使用，
+生产阶段时，若变量没有被其它模块使用则删除对应的导出语句
+
+
+**webpack的优化**
+
+- 使用持久化缓存， Webpack5 场景下设置 cache.type = 'filesystem' 即可开启，开启持久化缓存，Webpack5 会将首次构建出的 Module、Chunk、ModuleGraph 等对象序列化后保存到硬盘中，后面再运行的时候就可以跳过一些耗时的编译动作，直接复用缓存信息。webpack 4可以使用cache-loader，开启babel-loader和eslint-loader的缓存。
+- 使用多进程打包，比如使用happy-pack，thread-loader。可以开启terser的并行压缩，行确实能够提升系统运行效率，但 Node 单线程架构下，所谓的并行计算都只能依托与派生子进程执行，而创建进程这个动作本身就有不小的消耗 —— 大约 600ms，因此需要按实际需求使用上述多进程方案。
+- 减少编译范围、编译步骤提升 Webpack 性能，使用最新版本 Webpack、Node，配置 resolve 控制资源搜索范围，针对 npm 包设置 module.noParse 跳过编译步骤，配置 module.rules.exclude 或 module.rules.include 降低 Loader 工作量，配置 watchOption.ignored 减少监听文件数量，慎重选择 source-map 值，开发环境使用 eval ，确保最佳编译速度，生产环境使用source-map，获取最高质量，但我们不可以让用户访问到source-map，比如上传到服务器的时候不上传source-map，或者在服务区配置静止用户访问，在nginx配置map对应的location。优化 ts 类型检查逻辑，类型检查涉及 AST 解析、遍历以及其它非常消耗 CPU 的操作，会给工程化流程引入性能负担，必要时开发者可选择关闭编译主进程中的类型检查功能，同步用 fork-ts-checker-webpack-plugin 插件将其剥离到单独进程执行，
+- 配置分包，SplitChunksPlugin 通过 module 被引用频率、chunk 大小、包请求数三个维度决定是否执行分包操作，这些决策都可以通过 optimization.splitChunks 配置项调整定制，基于这些维度我们可以实现：单独打包某些特定路径的内容，例如 node_modules 打包为 vendors，单独打包使用频率较高的文件，还可以配置缓存组。Webpack 内部包含三种类型的 Chunk：Initial Chunk：基于 Entry 配置项生成的 Chunk，Async Chunk：异步模块引用，如 import(xxx) 语句对应的异步 Chunk，Runtime Chunk：只包含运行时代码的 Chunk。通过设置SplitChunksPlugin为all表示对所有类型的chunk都能进行分割。还可以设置使用频率minchunk以及分包大小 minSize、maxSize进行分包。
+- 配置 Scope Hoisting，默认情况下，经过 Webpack 打包后的模块资源会被组织成一个个函数形式，这种结构存在两个影响到运行性能的问题：重复的函数模板代码会增大产物体积，消耗更多网络流量，函数的出栈入栈需要创建、销毁作用域空间，影响运行性能。开启 Scope Hoisting 后，Webpack 会将尽可能多的模块合并到同一个函数作用域下，但合并功能一方面依赖于 ESM 静态分析能力；一方面需要确保合并操作不会造成代码冗余
+
+
+拆包策略
+
+- react、vue这些工具包可以单独抽出来，采用强缓存。
+- antd、element单独一个包设置强缓存。
+- 把nodemodule抽成一个独立的包，采用离线截至的缓存，比如localstorage、indexdb等。这里有个问题就是修改了内容以后，要让离线内容更新。
+- runtime代码可以直接注入到html。
+- 可以把公用的包单独抽出来,设置协商缓存。
+- 异步的包可以单独抽成一恶搞chunk，然后使用quicklink加载，他能根据系统烦不烦忙、网络快不快、是否在视图窗口提前加载对应的包。
+
+
+
+
 
 

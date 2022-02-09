@@ -39,8 +39,12 @@ get event 函数允许公众经过该函数订阅事件，它的主要任务是�
 ```
 get event(): Event<T> {
   ...
+
+  // 将事件添加到listeners中
   const remove = this._listeners.push(!thisArgs ? listener : [listener, thisArgs])
+
   ...
+
 }
 
 ```
@@ -151,4 +155,236 @@ map 函数主要的作用是对 event 进行转换，最后订阅的是一个 Ev
 
 ```
 
-而 forEach/filter/reduce 原理基本上都差不多
+**forEach**
+
+forEach函数接受一个event和一个'each'函数，返回另一个相同的event，并为每个元素调用'each'函数。
+
+```
+	export function forEach<I>(event: Event<I>, each: (i: I) => void): Event<I> {
+		return snapshot((listener, thisArgs = null, disposables?) =>
+			event(
+				(i) => {
+					each(i)
+					listener.call(thisArgs, i)
+				},
+				null,
+				disposables,
+			),
+		)
+	}
+
+```
+
+**filter**
+
+filter使用了函数的重载，给定一个event和一个'filter'函数，转换为如果filter返回true执行原来的event.
+
+```
+export function filter<T, U>(event: Event<T | U>, filter: (e: T | U) => e is T): Event<T>
+	export function filter<T>(event: Event<T>, filter: (e: T) => boolean): Event<T>
+	export function filter<T, R>(event: Event<T | R>, filter: (e: T | R) => e is R): Event<R>
+	export function filter<T>(event: Event<T>, filter: (e: T) => boolean): Event<T> {
+		return snapshot((listener, thisArgs = null, disposables?) =>
+			event((e) => filter(e) && listener.call(thisArgs, e), null, disposables),
+		)
+	}
+
+```
+
+**reduce**
+
+给定一个事件和一个“merge”函数，返回另一个映射每个元素的事件,以及通过“merge”函数得到的累积结果。类似于“map”.
+
+```
+export function reduce<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, initial?: O): Event<O> {
+		let output: O | undefined = initial
+
+		return map<I, O>(event, (e) => {
+			output = merge(output, e)
+			return output
+		})
+	}
+
+```
+**signal**
+
+这个函数仅仅是做了一下类型转换，让订阅者忽略事件的参数
+
+```
+	export function signal<T>(event: Event<T>): Event<void> {
+		return event as Event<any> as Event<void>
+	}
+
+```
+
+**any**
+any也使用了函数的重载，这个方法会在 events 中任意一个 Event 派发事件的时候派发一个事件。
+
+```
+	export function any<T>(...events: Event<T>[]): Event<T>
+	export function any(...events: Event<any>[]): Event<void>
+	export function any<T>(...events: Event<T>[]): Event<T> {
+		return (listener, thisArgs = null, disposables?) =>
+			combinedDisposable(...events.map((event) => event((e) => listener.call(thisArgs, e), null, disposables)))
+	}
+
+```
+
+**debounce**
+
+对 Event 链条上的事件做防抖处理。listener会对 debounce 时间内对数据做归并处理，定时器到期时就调用 emitter.fire 向下游继续发送事件。
+
+```
+
+	export function debounce<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		delay: number = 100,
+		leading = false,
+		leakWarningThreshold?: number,
+	): Event<O> {
+    .....................
+
+		const emitter = new Emitter<O>({
+			leakWarningThreshold,
+			onFirstListenerAdd() {
+				subscription = event((cur) => {
+					numDebouncedCalls++
+					output = merge(output, cur)
+
+					if (leading && !handle) {
+						emitter.fire(output)
+						output = undefined
+					}
+
+					clearTimeout(handle)
+					handle = setTimeout(() => {
+						const _output = output
+						output = undefined
+						handle = undefined
+						if (!leading || numDebouncedCalls > 1) {
+							emitter.fire(_output!)
+						}
+
+						numDebouncedCalls = 0
+					}, delay)
+				})
+			},
+		  ................................
+      q
+		})
+
+		return emitter.event
+	}
+
+
+```
+
+**stopWatch**
+
+一个记录耗时的 Event，当它收到第一个事件时，会把这个事件转换为它从创建到收到该事件的耗时。
+
+```
+	export function stopwatch<T>(event: Event<T>): Event<number> {
+		const start = new Date().getTime()
+		return map(once(event), (_) => new Date().getTime() - start)
+	}
+
+```
+
+**latch**
+
+这个 Event 仅有当事件确实发生变化时，才会向下游发送事件。
+
+```
+	export function latch<T>(event: Event<T>, equals: (a: T, b: T) => boolean = (a, b) => a === b): Event<T> {
+		let firstCall = true
+		let cache: T
+
+		return filter(event, (value) => {
+			const shouldEmit = firstCall || !equals(value, cache)
+			firstCall = false
+			cache = value
+			return shouldEmit
+		})
+	}
+
+```
+**buffer**
+
+在没有人订阅buffer event时，会缓存所有收到的事件，并在收到订阅时将已经缓存的事件全部发送出去。
+
+```
+	export function buffer<T>(event: Event<T>, nextTick = false, _buffer: T[] = []): Event<T> {
+		let buffer: T[] | null = _buffer.slice()
+
+    let listener: IDisposable | null = event((e) => {
+			if (buffer) {
+        // 进行缓存
+				buffer.push(e)
+			} else {
+				emitter.fire(e)
+			}
+		})    
+
+    // 收到订阅时，执行emitter
+		const flush = () => {
+			if (buffer) {
+				buffer.forEach((e) => emitter.fire(e))
+			}
+			buffer = null
+		}
+      ...
+		})
+
+		return emitter.event
+	}
+
+```
+
+**fromPromise**
+
+将 Promise 转换为事件。通过 shouldEmit 确保 Promise 不会因为已经 resolve 而在订阅发生之前就开始派发事件
+
+```
+
+ export function fromPromise<T = any>(promise: Promise<T>): Event<undefined> {
+        const emitter = new Emitter<undefined>();
+        let shouldEmit = false;
+
+        promise
+            .then(undefined, () => null)
+            .then(() => {
+                if (!shouldEmit) {
+                    setTimeout(() => emitter.fire(undefined), 0);
+                } else {
+                    emitter.fire(undefined);
+                }
+            });
+
+        shouldEmit = true;
+        return emitter.event;
+    }
+
+```
+**Relay**
+
+这个类提供了切换上游 Event 的方法。当设置 Relay 的 input 属性时，就会切换监听的 Event，而下游的 Event 监听的是 Relay 的 Emitter，因此无需重新设置监听。
+
+```
+export class Relay<T> implements IDisposable {
+    // ...
+
+    set input(event: Event<T>) {
+        this.inputEvent = event;
+
+        if (this.listening) {
+            this.nputEventListener.dispose();
+            this.inputEventListener = event(this.emitter.fire, this.emitter);
+        }
+    }
+
+    // ...
+}
+
+```
