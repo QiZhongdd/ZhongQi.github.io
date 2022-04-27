@@ -1,8 +1,6 @@
-原理：webpack打包输出的文件其实就是一个闭包，传入的参数是一个对象，健值为输出的文件路径，内容为eval包裹的文件内容；闭包内重写了模块加载的方式，自己定义了webpack_require方法，来实现模拟的commonjs。webpack是基于事件流的，通过一些列的插件来运行，利用tapable提供各种钩子来实现对于整个构建流程的把控。
-
+原理：webpack打包输出的文件其实就是一个闭包，传入的参数是一个对象，健值为输出的文件路径，内容为eval包裹的文件内容，上线的时候是没有用eval的，本地开发主用eval主要是为了简单方便；闭包内重写了模块加载的方式，自己定义了webpack_require方法，来实现模拟的commonjs。webpack是基于事件流的，通过一些列的插件来运行，利用tapable提供各种钩子来实现对于整个构建流程的把控。
 webpack的构建流程
-- 创建Compiler的实例，compile是webpack的运行入口用于控制构建流程，包含webpack的基本环境信息。
-- 根据配置项转换成对应的插件，并初始化配置项。
+- 创建Compiler的实例，compile是webpack的运行入口用于控制构建流程，包含webpack的基本环境信息，并初始化配置项。
 - 执行compiler.runtime，创建compiliation的实例,compiliation是webpack的核心，存储构建的数据，用于控制数据的变化，每次构建都会生成compiliation的实例。
 - 从entry开始递归分析依赖，对每个依赖块进行buildModule，通过不同的loader将不同类型的文件构建成webpack的模块。
 - 将上面的结果转换成AST树。
@@ -11,10 +9,7 @@ webpack的构建流程
 - 使用Template基于Compiliation的数据生成结果代码。
 
 
-
-
-
-webpack热更新原理
+**webpack热更新原理hmr**
 
 HMR能够在保持页面状态的情况下动态替换资源模块，提供顺畅的 Web 页面开发体验。在webpack的生态下启动热更新需要在dev-server中配置hot，同时会调用 module.hot.accept 接口，声明如何将模块安全地替换为最新代码。HMR核心流程：有以下几个步骤
 - 使用 webpack-dev-server托管静态资源，同时以 Runtime 方式注入 HMR 客户端代码
@@ -25,32 +20,37 @@ HMR能够在保持页面状态的情况下动态替换资源模块，提供顺�
 - Webpack 运行时触发变更模块的 module.hot.accept 回调，执行代码变更逻辑
 
 
-webpack的hash
+**chrome extension 热更新实现方式如下。**
+
+配置 webpack server，将 bundle 写到磁盘。
+通过 webpack plugin 暴露 compiler 对象。
+为 webpack server 增加中间件，拦截 reload 请求，转化为 SSE（SSE 全称是 erver-sent Events，是在 HTML 5 中规范和定义的一种服务端推送方式），compiler 注册编译完成的钩子，在回调函数中通过 SSE 发送消息。
+chrome extension 启动后，background 与 webpack server 建立连接，监听 reload 方法，收到 server 的通知后，执行 chrome 本身的 reload 方法，完成更新。
+
+
+**webpack的hash**
+
 webpack的hash有content-hash、hash、chunkhash
 
 hash 是跟整个项目的构建相关，只要项目里有文件更改，整个项目构建的hash值都会更改，并且全部文件都共用相同的 hash 值。(粒度整个项目)
 chunkhash是根据不同的入口进行依赖文件解析，构建对应的chunk(模块)，生成对应的 chunk 值。只有被修改的chunk(模块)在重新构建之后才会生成新的hash值，不会影响其它的chunk。(粒度 entry 的每个入口文件)
-content-hash是跟每个生成的文件有关，每个文件都有一个唯一的 hash 值。当要构建的文件内容发生改变时，就会生成新的content-hash 值，且该文件的改变并不会影响和它同一个模块下的其它文件。(粒度每个文件的内容)
+content-hash是跟每个生成的文件有关，每个文件都有一个唯一的 hash 值。当要构建的文件内容发生改变时，就会生成新的content-hash 值，且该文件的改变并不会影响和它同一个模块下的其它文件。(粒度每个文件的内容)。他适用于css,比如更改了某个入口文件，这个时候css并没有修改，这个时候使用chunkhash就不太合适了。
 
-webpack 插件
+**webpack 插件**
 
 插件是webpack运行到某个时间点需要执行的函数或者对象，webpack插件实现机制如下
 - 创建:webpack在自己内部定义了各种hook，这些hook是基于tapable实现的，tapable是类似于eventEmitter的库
 - 注册:插件将自己的方法注册到对应的hook上，交给webpack
 - 触发: webpack运行到某个节点的时候会触发相关的一系列hook，从而执行插件
-
 - 事件钩子会有不同的类型 SyncBailHook,AsyncSeriesHook,SyncHook 等,是基于tapable。
 
-
-
-
-**tabable**
+**tapable**
 细说的话就得从webpack cli说起了先检查webpack-cli，如果没有的话就去install，install需要判断是否有yarn活install，yarn 可以通过yarn log判断。然后webpack cli对entry做初始化，判断是单模块还是多模块。初始化模块后要用compile，compile是基于tapable的，在compile里面模块之间的调度都是通过tapable的hook完成的，hook有异步的也有同步的。然后new compiliaton，看你是单入口还是多入口。如果是单入口的话，就执行单入口的独立脚步。在执行之前需要执行所有的插件，因为plugin有compilation刚初始化的hooks，如果使用plugin比较早的生命周期的话那吗就出发了，运用call 绑定compoiliation把compilation丢进去了。如果没有的话那么comliliation回去分析chunk，这是webpack最核心的了。chunk有同步和异步的，然后去parser模块分析依赖，分析完毕后交给依赖模块和module模块，最后生成template生成我们的代码。
 
 
 **vue文件依赖解析**
-使用vue-loader，然后分析vue里面的东西，要装vue-template编译template模块转换成虚拟dom，然后分析vue的style模块，如果分析到style模块就交给自己的style,如果分析到了script模块，那么就能交给webpack去编译，相当于把webpack模块拆开了
 
+使用vue-loader，然后分析vue里面的东西，要装vue-template编译template模块转换成虚拟dom，然后分析vue的style模块，如果分析到style模块就交给自己的style,如果分析到了script模块，那么就能交给webpack去编译，相当于把webpack模块拆开了
 
 **实现htmlAfterPlugin**
 
@@ -59,78 +59,6 @@ webpack 插件
 - 创建基于compiler.hooks.compilation的插件
 - 然后在html-webpack-plugin的beforeAssetTagGeneration钩子获取到相关需要注入的资源
 - 获取html-webpack-plugin的beforeEmit钩子，该钩子是处于注入到html前，能够获取到html内容，对相关html内容进行替换
-
-
-
-
-
-```
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const pluginName = 'HtmlAfterPlugin';
-
-const assetsHelp = (data) => {
-  const js = [];
-  const css = [];
-  const getAssetsName = {
-    css: (item) => `<link rel="stylesheet" href="${item}">`,
-    js: (item) => `<script class="lazyload-js" src="${item}"></script>`,
-  };
-  for (let jsitem of data.js) {
-    js.push(getAssetsName.js(jsitem));
-  }
-  for (let cssitem of data.css) {
-    css.push(getAssetsName.css(cssitem));
-  }
-  return {
-    js,
-    css,
-  };
-};
-
-class HtmlAfterPlugin {
-  constructor() {
-    this.jsarr = [];
-    this.cssarr = [];
-  }
-  apply(compiler) {
-    // compilation 创建之后执行。
-    compiler.hooks.compilation.tap(pluginName, (compilation) => {
-      // 在标签生成之前
-      HtmlWebpackPlugin.getHooks(compilation).beforeAssetTagGeneration.tapAsync(
-        pluginName,
-        (htmlPligunData, cb) => {
-          const { js, css } = assetsHelp(htmlPligunData.assets);
-          this.cssarr = css;
-          this.jsarr = js;
-          cb(null, htmlPligunData);
-        }
-      );
-      // 插入标签内容
-      HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
-        pluginName,
-        (data, cb) => {
-          let _html = data.html;
-          _html = _html.replace('<!--injectjs-->', this.jsarr.join(''));
-          _html = _html.replace('<!--injectcss-->', this.cssarr.join(''));
-          _html = _html.replace(/@components/g, '../../../components');
-          _html = _html.replace(/@layouts/g, '../../layouts');
-          data.html = _html;
-          cb(null, data);
-        }
-      );
-    });
-  }
-}
-
-module.exports = HtmlAfterPlugin;
-
-
-```
-
-
-
-
-
 
 
 # Loader
@@ -152,14 +80,19 @@ Plugin直译为"插件"。Plugin可以扩展webpack的功能，让webpack具有�
 
 
 
-# ModuleFeduration
+# ModuleFeduration mf
 
 ModuleFeduration想做的事便是把多个无相互依赖、单独部署的应用合并为一个。也是一种微前端的解决方案。ModuleFeduration提供了能在当前应用中远程加载其他服务器上应用的能力，可以引出下面两个概念：host：引用了其他应用的应用。remote：被其他应用所使用的应用。使用mf有几个重要的属性，remotes远程应用名及其别名的映射，name模块名。filename构建输出的文件名称。exports被远程应用引用时可暴漏的资源路径以及别名，share与其他应用共享的第三方模块。主要原理
 - mf会让webpack以filename作为文件名生成文件
 - 其次，文件暴露了一个名为name的全局变量，其中包含了exposes以及shared中配置的内容
 - 最后，作为host时，先通过remote init的时候将自身shared写入remote中，然后获取remote中expose的组件，而作为remote时，判断host中是否有可用的共享依赖，若有，则加载host的这部分依赖，若无，则加载自身依赖。
 
+# chunk、module、bundle
 
+module，chunk 和 bundle 其实就是同一份逻辑代码在不同转换场景下的取了三个名字：
+对于一份同逻辑的代码，当我们手写下一个一个的文件，它们无论是 ESM 还是 commonJS 或是 AMD，他们都是 module ；
+当我们写的 module 源文件传到 webpack 进行打包时，webpack 会根据文件引用关系生成 chunk 文件，webpack 会对这个 chunk 文件进行一些操作；
+webpack 处理好 chunk 文件后，最后会输出 bundle 文件，这个 bundle 文件包含了经过加载和编译的最终源文件，所以它可以直接在浏览器中运行。
 
 # Vite只做两件事
 
@@ -216,7 +149,9 @@ Esbuild 当下与未来都不能替代 Webpack，它不适合直接用于生产�
 Webpack 中，Tree-shaking 的实现一是先「标记」出模块导出值中哪些没有被用过，二是使用 Terser 删掉这些没被用到的导出语句。过程大致可划分为三个步骤：
 Make（构建阶段） 阶段，收集模块导出变量并记录到模块依赖关系图中
 Seal（打包） 阶段，遍历模块依赖关系图,标记模块导出的变量有没有被使用，
-生产阶段时，若变量没有被其它模块使用则删除对应的导出语句
+生产阶段时，若变量没有被其它模块使用则删除对应的导出语句。
+
+有副作用的的不会被tree-shaking删掉，所谓的副作用不只是调用了函数，比如使用了原型链、给window加了属性、立即执行函数引用了外部变量,经过bable其它的打包一下，也有可能会产生副作用。比如对于类的作用也会有问题，当我们没有引入babel的时候，遵循函数的方式进行shaking，但是引入babel之后，转化成ES5，会挂载到函数的原型上，就会产生副作用，从而没办法达到想要的结果。当然我们可以配置sideEffects为false,sideEffects主要是让 webpack 去除 tree shaking 带来副作用的代码。不管有没有副作用，只要没有被引用，都会被清除。但是会引申出另一个问题，如果配置了，那么很多简单引用都会被忽略，比如引入一个css。所以为什么那么多脚手架都不会去配置这个参数，并不能保证开发者能保证代码都没有副作用.sideEffects可以是一个数组，表示当前的这些文件有副作用，从而不tree-shaking.
 
 
 **webpack的优化**
@@ -225,10 +160,10 @@ Seal（打包） 阶段，遍历模块依赖关系图,标记模块导出的变�
 - 使用多进程打包，比如使用happy-pack，thread-loader。可以开启terser的并行压缩，行确实能够提升系统运行效率，但 Node 单线程架构下，所谓的并行计算都只能依托与派生子进程执行，而创建进程这个动作本身就有不小的消耗 —— 大约 600ms，因此需要按实际需求使用上述多进程方案。
 - 减少编译范围、编译步骤提升 Webpack 性能，使用最新版本 Webpack、Node，配置 resolve 控制资源搜索范围，针对 npm 包设置 module.noParse 跳过编译步骤，配置 module.rules.exclude 或 module.rules.include 降低 Loader 工作量，配置 watchOption.ignored 减少监听文件数量，慎重选择 source-map 值，开发环境使用 eval ，确保最佳编译速度，生产环境使用source-map，获取最高质量，但我们不可以让用户访问到source-map，比如上传到服务器的时候不上传source-map，或者在服务区配置静止用户访问，在nginx配置map对应的location。优化 ts 类型检查逻辑，类型检查涉及 AST 解析、遍历以及其它非常消耗 CPU 的操作，会给工程化流程引入性能负担，必要时开发者可选择关闭编译主进程中的类型检查功能，同步用 fork-ts-checker-webpack-plugin 插件将其剥离到单独进程执行，
 - 配置分包，SplitChunksPlugin 通过 module 被引用频率、chunk 大小、包请求数三个维度决定是否执行分包操作，这些决策都可以通过 optimization.splitChunks 配置项调整定制，基于这些维度我们可以实现：单独打包某些特定路径的内容，例如 node_modules 打包为 vendors，单独打包使用频率较高的文件，还可以配置缓存组。Webpack 内部包含三种类型的 Chunk：Initial Chunk：基于 Entry 配置项生成的 Chunk，Async Chunk：异步模块引用，如 import(xxx) 语句对应的异步 Chunk，Runtime Chunk：只包含运行时代码的 Chunk。通过设置SplitChunksPlugin为all表示对所有类型的chunk都能进行分割。还可以设置使用频率minchunk以及分包大小 minSize、maxSize进行分包。
-- 配置 Scope Hoisting，默认情况下，经过 Webpack 打包后的模块资源会被组织成一个个函数形式，这种结构存在两个影响到运行性能的问题：重复的函数模板代码会增大产物体积，消耗更多网络流量，函数的出栈入栈需要创建、销毁作用域空间，影响运行性能。开启 Scope Hoisting 后，Webpack 会将尽可能多的模块合并到同一个函数作用域下，但合并功能一方面依赖于 ESM 静态分析能力；一方面需要确保合并操作不会造成代码冗余
+- 使用swc和esbuild，他们分别用go和rust写的。但他们的生态不如babel完整，有些npm包可能不能编译。
+- webpack自身也做了一些优化，比如使用了v8-compile-cache 用于对编译中间结果持久化，加快整体执行时间。
 
-
-拆包策略
+**拆包策略**
 
 - react、vue这些工具包可以单独抽出来，采用强缓存。
 - antd、element单独一个包设置强缓存。
@@ -238,7 +173,16 @@ Seal（打包） 阶段，遍历模块依赖关系图,标记模块导出的变�
 - 异步的包可以单独抽成一恶搞chunk，然后使用quicklink加载，他能根据系统烦不烦忙、网络快不快、是否在视图窗口提前加载对应的包。
 
 
+**v8-compile-cache**
+
+v8 是一个 JIT(Just in time) 编译器。与传统的解释器一行一行执行不同的是，JIT 会在执行脚本前，对源码先解析（parsing）、再编译（compiling)，速度相比前者提升了不少。但解析和编译仍然消耗时间。v8为了能将中间结果缓存起来，就支持了 code caching 的功能。减少二次执行的构建时间，加快脚本的整体执行速度。因为node.js 通过 require 来连接代码，v8-compile-cache的主要作用就是对所有 require 的 module 进行编译并缓存结果。v8-compile-cache 的使用很简单，直接require就行，首先会检查用户是否开启了code caching，如果支持就做持久化，持久化的时候首先在硬盘生成写入地址，然后存储生成的二进制 code caching，建立一个map对象存储脚本到二进制文件的映射。最后将require hook和存储的二进制文件关联起来。关联的时候会重写原生模块的require方法，在require方法内部先创建一个node的 wrapper function，然后对文件内容生成散列，接着读取已经生成 code cache。然后给 vm.Script 去执行。vm.Script 并不会运行脚本，只负责编译，最后返回一个 compiledWraper包装到 module.exports。
 
 
 
 
+**externals**
+externals和libraryTarget的关系
+libraryTarget配置如何暴露 library。如果不设置library,那这个library就不暴露。就相当于一个自执行函数
+externals是决定的是以哪种模式去加载所引入的额外的包
+libraryTarget决定了你的library运行在哪个环境，哪个环境也就决定了你哪种模式去加载所引入的额外的包。也就是说，externals应该和libraryTarget保持一致。library运行在浏览器中的，你设置externals的模式为commonjs，那代码肯定就运行不了了。
+如果是应用程序开发，一般是运行在浏览器环境libraryTarget可以不设置，externals默认的模式是global，也就是以全局变量的模式加载所引入外部的库。

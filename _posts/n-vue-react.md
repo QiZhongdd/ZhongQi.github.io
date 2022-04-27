@@ -6,8 +6,7 @@ react的事件机制主要有两个阶段：
 事件注册阶段：收集相关的事件绑定到document中，但并不是所有的事件都会被收集比如form表单的submit、reset还有video和audio的媒体事件。
 第二个阶段是执行阶段：它主要有以下几个步骤，第一个步骤是创建合成事件，并将原生事件包装到合成事件中，以原生事件的target为节点向上查找，如果fiber节点的tag=hostComponent则加入到path数组中。第二个步骤是捕获阶段，倒序遍历path数组，如果fiber节点还有onClickCapture属性，则添加到合成事件的dispatch_listner中。第三个步骤是收集冒泡的回调。顺序遍历path数组，如果找到了onClick回调，则添加到dispatch_listner，第四个步骤就是按顺序执行合成事件的dispatch_Listner。
 
-React v17 中，React 不会再将事件处理添加到 document 上，而是将事件处理添加到渲染 React 树的根 DOM 容器中：这是因为在多版本并存的系统时，不同版本的事件系统是独立的，所以不同版本的 React 组件嵌套使用时，e.stopPropagation()无法正常工作，因为到document已经太晚，此时原声的原生 DOM 事件早已冒出document了。为了解决这个问题，React 17 不再往document上挂事件委托，而是挂到 root节点上
-
+React v17 中，React 不会再将事件处理添加到 document 上，而是将事件处理添加到渲染 React 树的根 DOM 容器中：这是因为在多版本并存的系统时，不同版本的事件系统是独立的，所以不同版本的 React 组件嵌套使用时，e.stopPropagation()无法正常工作，因为到document已经太晚，此时原声的原生 DOM 事件早已冒出document了。为了解决这个问题，React 17 不再往document上挂事件委托，而是挂到 root节点上。
 
 **对react fiber的理解**
 
@@ -30,8 +29,6 @@ react的调度会调用unstable_scheduleCallback
 - 如果提供了 delay，则任务被放置在 timerQueue 中
 - 如果 taskQueue 为空，且当前任务在 timerQueue 的顶部（当前任务的超时时间最近），则使用 requestHostTimeout 启动定时器（setTimeout），在到达当前任务的超时时间时将这个任务转移到 taskQueue 中。
 - 时间分片每 5 毫秒检查一下，运行一次异步的 MessageChannel 的 port.postMessage(…)方法，检查是否存在事件响应、更高优先级任务或其他代码需要执行；如果有则执行，如果没有则重新创建工作循环，执行剩下的工作中 Fiber。
-
-
 
 
 
@@ -75,12 +72,27 @@ UI 更新分紧急和不紧急，给不紧急的加 startTransition(() => {})，
 
 
 
-setState 是同步还是异步
-state是用来管理内部状态的，只能通过setState和forceUpdate改变状态更新视图。setState最终也会走forceUpdate。每个类组件都有一个updater对象用于管理state的变化。调用setState更新状态时，此时updater又会调用emitUpdate来决定是否立即更新，判断条件简单来说是否有nextProps，或者updateQueue的isPending是否开启，updateQueue用于管理updater，如果updateQueue的isPending为true，判断组件的shouldComponentUpdate决定是否调用forceUpdate进行更新
+**setState 是同步还是异步**
 
 setState 只在合成事件和钩子函数中是“异步”的，在原生事件和 setTimeout 中都是同步的。
 setState的“异步”并不是说内部由异步代码实现，其实本身执行的过程和代码都是同步的，只是合成事件和钩子函数的调用顺序在更新之前，导致在合成事件和钩子函数中没法立马拿到更新后的值，形式了所谓的“异步”，当然可以通过第二个参数 setState(partialState, callback) 中的callback拿到更新后的结果。
 setState 的批量更新优化也是建立在“异步”（合成事件、钩子函数）之上的，在原生事件和setTimeout 中不会批量更新，在“异步”中如果对同一个值进行多次 setState ， setState 的批量更新策略会对其进行覆盖，取最后一次的执行，如果是同时 setState 多个不同的值，在更新时会对其进行合并批量更新。
+
+**setState的过程**
+
+1.将setState传入的partialState参数存储在当前组件实例的_pendingStateQueue中。
+2.判断当前React是否处于批量更新状态，如果是，将当前组件标记为dirtyCompontent,并加入待更新的组件队列中。
+3.如果未处于批量更新状态，将isBatchingUpdates设置为true，用事务再次调用前一步方法，保证当前组件加入到了待更新组件队列中。
+4.调用事务的waper方法，遍历待更新组件队列依次执行更新。
+5.执行生命周期componentWillReceiveProps。
+6.将组件的state暂存队列中的state进行合并，获得最终要更新的state对象，并将_pendingStateQueue置为空。
+7.执行生命周期shouldComponentUpdate，根据返回值判断是否要继续更新。
+8.执行生命周期componentWillUpdate。
+9.执行真正的更新，render。
+10.执行生命周期componentDidUpdate。
+
+
+
 
 react的useState和Class中的state有什么区别
 首先class中的state是immutable的，得通过setState去修改，会产生一个新的引用，可以通过this.state获取新的数据。
@@ -168,41 +180,6 @@ Link和a标签的区别，link如果有onClick事件,那么会优先执行click�
 
 
 
-**什么要进行ssr**
-
-首先spa在启动的时候，首先要先加载js和css，待js加载完后然后开始执行，发送请求，将数据内容与资源渲染奥屏幕上。这会导致白屏时间较长。同时无法解决SEO的问题。所以就出现了SSR，SSR解决了上面的两个问题，但是比较复杂难以维护，并且对服务器的性能损耗比较大。
-
-reactssr的原理：ssr依赖的是虚拟dom，因为Node中是不能操作dom对象的，react的ssr只能将虚拟dom转换成虚dom输出，然后通过js对象将虚拟dom进行挂载。
-
-react-同构的步骤
-- 首先我们先利用koa渲染一段html，然后利用renderToString和renderToNodeStream渲染app应用相关的组件,渲染完成后放入root的div中，实现真正的服务端渲染
-- 由于renderToString和renderToNodeStream只能处理html dom元素，不能处理逻辑，所以还需要利用webpack对客户端进行构建，引入构建后的js文件
-- 对前后端的路由进行拆分，前端路由为 browRouter，后端路由 staticRouter，并分别绑定
-- 这样基本完成了，但是数据并没有跟随服务端一起渲染，需要客户端发送请求响应的数据然后再进行渲染
-- 解决该完问题首先对路由进行改造，在路由上添加一个loadData方法请求数据的加载，后端通过matchRoute匹配对应的路由，判断是否有loadData，然后进行加载。加载完后挂载到window上。也就是所谓的注水操作。
-- 现在的问题是如果一个路由匹配到了多个界面，无法处理多级路由的数据。这个时候就得借助状态管理，比如redux，将loadData的数据保存在状态管理中。
-- 最后客户端要进行判断，如果有数据那么就不需要进行加载loadData。
-
-**几种渲染方式的对比**
-
-csr:不依赖服务端的数据，客户端体验较好，内存数据共享，fp最快，但是seo不友好，FMP和FCP慢
-预渲染：不依赖服务端的数据，fcp比csr快，客户端体验较好，内存数据共享但fmp比较慢，seo不友好
-ssr:seo友好，首屏性能高，fmp和fcp都比csr和预渲染快，但客户端数据共享成本高，模版维护成本高
-同构：seo友好，首屏性能高，fmp和fcp都比预渲染快，客户端体验比较友好内存数据共享，但是node容易造成性能瓶颈
-
-**redux的了解**
-redux的数据都会存放在store中，必须通过指定的流才能去修改，首先view会通过派发action，reducer收到action后会根据不同state进行替换，然后通知相关的订阅，订阅收到通知后触发相关的事件。同时redux还提供了以下属性，在平时的开发中我们会根据模块定义多个reducer，可以利用combineReucer将多个reducer组合成一个。middleware，可以监听redux的状态或者对dispatch进行劫持，常见的有redux-saga、redux-thunk。middleware是根据组合函数将多个middleware组合在一起的。
-
-mobx的了解
-mobx是一个状态管理库，跟redux不同，它更加的简单且扩展性强，推崇任何源自应用状态的东西都可以自动的获得。它的核心原理是通过action触发state的变化，进而更新state的衍生对象computed和reaction。mobx有以下几个概念
-- ObservableState:可观察的状态，存放应用数据，Observer是递归引用的，如果是对象和数组也是可观察的
-- Computed values：计算值在相关的state数据发生变化时自动更新值
-- reaction跟计算值很像，但它不是一个新的值，而是会产生副作用，比如打印、网络请求、更新组件树等
-- actions:用来修改状态
-
-
-recoil
-recoil也是一个状态管理工具吧，他只能用于react。采用分散管理原子状态的设计模式。 提出了一个新的状态管理单位 Atom，它是可更新和可订阅的，当一个 Atom 被更新时，每个被订阅的组件都会用新的值来重新渲染。如果从多个组件中使用同一个 Atom ，所有这些组件都会共享它们的状态。改变一个 Atom 只会渲染特定的子组件，并不会让整个父组件重新渲染。React 本身提供的 state 状态在跨组件状态共享上非常苦难，在之前开发时一般借助一些其他的库如 Redux、Mobx 来帮助我们管理状态，redux和mobx并不是 React 库，像 Redux 它本身虽然提供了强大的状态管理能力，但是使用的成本非常高，你还需要编写大量冗长的代码，另外像异步处理或缓存计算也不是这些库本身的能力，甚至需要借助其他的外部库。并且它们并不能访问 React 内部的调度程序，而 Recoil 在后台使用 React 本身的状态，并且在使用方式上完全拥抱了函数式的 Hooks 使用方式
 
 
 **实现useCallback**
@@ -261,7 +238,7 @@ Class Suspense extend React.component{
 ```
 
 
-react 的生命周期
+**react 的生命周期**
 
 - 加载
 - - Constructor
@@ -280,6 +257,54 @@ react 的生命周期
 - componentWillUnmount
 
 
+- 父子组件初始化
+父子组件第一次进行渲染加载时：
+控制台的打印顺序为：
+
+Parent 组件： constructor()
+Parent 组件： getDerivedStateFromProps()
+Parent 组件： render()
+Child 组件： constructor()
+Child 组件： getDerivedStateFromProps()
+Child 组件： render()
+Child 组件： componentDidMount()
+Parent 组件： componentDidMount()
+
+- 修改父组件中传入子组件的 props
+点击父组件中的 [改变传给子组件的属性 count] 按钮，则界面上 [父组件传过来的属性 count] 的值会 + 1，控制台的打印顺序为：
+Parent 组件： getDerivedStateFromProps()
+Parent 组件： shouldComponentUpdate()
+Parent 组件： render()
+Child 组件： getDerivedStateFromProps()
+Child 组件： shouldComponentUpdate()
+Child 组件： render()
+Child 组件： getSnapshotBeforeUpdate()
+Parent 组件： getSnapshotBeforeUpdate()
+Child 组件： componentDidUpdate()
+Parent 组件： componentDidUpdate()
+
+- 卸载子组件
+点击父组件中的 [卸载 / 挂载子组件]  按钮，则界面上子组件会消失，控制台的打印顺序为：
+Parent 组件： getDerivedStateFromProps()
+Parent 组件： shouldComponentUpdate()
+Parent 组件： render()
+Parent 组件： getSnapshotBeforeUpdate()
+Child 组件： componentWillUnmount()
+Parent 组件： componentDidUpdate()
+
+- 重新挂载子组件
+Parent 组件： getDerivedStateFromProps()
+Parent 组件： shouldComponentUpdate()
+Parent 组件： render()
+Child 组件： constructor()
+Child 组件： getDerivedStateFromProps()
+Child 组件： render()
+Parent 组件： getSnapshotBeforeUpdate()
+Child 组件： componentDidMount()
+Parent 组件： componentDidUpdate()
+
+
+
 
 
 **useCallback和useMemo的区别和应用场景以及useMemo**
@@ -292,44 +317,28 @@ proxy的操作
 举个例子：当访问draft.a时，通过自定义getter生成draft.a的代理对象darftA所用访问draft.a.x相当于darftA.x，同时如果draft.b没有访问，也不会浪费资源生成draftB
 setter:当对draft对象发生修改，会对base进行浅拷贝保存到copy上，同时将modified属性设置为true，更新在copy对象上
 
-
 **useEffect和useLayoutEffect的区别**
 
 useEffect 是异步执行的，useEffect 的执行时机是浏览器完成渲染之后，不会阻塞渲染，
 而useLayoutEffect是同步执行的，执行时机是浏览器把内容真正渲染到界面之前，和 componentDidMount 等价。如果需要操作 dom ，我们需要放到 useLayouteEffect 中去，避免导致闪烁。
 
-new Promise((resolve)=>{
-  console.log(1)
-  resolve()
-}).then(()=>{
-  console.log(2)
-  return new Promise((resolve)=>{
-      console.log(3)
-    resolve()
-  }).then(()=>{
-    console.log(4)
-  })
-  .then(()=>{
-    console.log(5)
-  })
-}) .then(()=>{
-    console.log(6)
-})
 
-new Promise((resolve)=>{
-  console.log(7)
-    resolve()
-  }).then(()=>{
-    console.log(8)
-  })
-  .then(()=>{
-    console.log(9)
-  })
-    
-1，7，2，3，8，4，9，5，6
+useRef： useRef 是一个使用相同 ref 的钩子。它在功能组件中的重新渲染之间保存其值，每次重新渲染引用不会发生改变。
+
+createRef： createRef 是一个每次都会创建一个新 ref 的函数。与 useRef 不同，它不会在重新渲染之间保存其值，而是为每次重新渲染创建一个新的 ref 实例，多用于dom的引用。
 
 
-class的数据类型是函数，会指向构造函数。constructor是构造方法，this会指向实例。类里面的所有方法都会绑定在class的prototype中。类的实例调用的方法，其实调用的就是原型上的方法。类的static方法是直接绑定在class中的，类似于class的属性，static中的方法中的this指向class自身，静态方法可以和非静态方法同名。Class 可以通过extends关键字实现继承。super关键字表示调用父类的构造函数。子类必须在constructor中添加super关键字，否则新建实例就会报错。如果子类没有加上constructor方法，那么会被默认加上。在super之前不能使用this。super()关键字其实类似于Parent.prototype.constructor.call(this)。而super指向的是Partent.prototype。在静态方法中指向的是父类。
+
+**react diff**
+
+react 的diff主要基于三种策略，第一种是react的操作不涉及到跨层级的操作，或者涉及到跨层级的操作很少。第二种是同一类型的组件结构是相同的，不同类型的组件结构是不同的。第三种是通过key值做唯一的标识。基于这三种策略，react分别对tree diff、component diff、element diff做了优化。首先tree diff基于第一种策略，react不涉及到跨层级的操作，这样通过遍历一次比较新老节点就能知道哪些节点有没被引用，如果没有被引用那么就删掉。如果涉及到跨层级的操作，比如A和B原来是兄弟节点，经过操作A变成了B的子节点需要把原来的节点删掉，然后在添加到B节点下面，这是一个比较耗费性能的操作，react也不建议这么操作。第二个就是相同类型的组件的结构是一样的，不同类型的组件的结构是不同的。假如能够知道react组件结构是否发生改变，如果不改变那么就不进行diff,这样就能节省大量的性能。所以react提供了shouComponentUpdate给用户判断是否需要更新。第三个就是element diff,通过唯一的表示key值用来判断节点是否能够复用，如果key值相同那么就对节点进行复用，必要的时候对节点进行移动，最后比较一下新老节点，将没有是用的老节点进行删除。
+
+
+
+
+
+
+
 
 
 

@@ -208,3 +208,9 @@ animation作用于元素本身而不是样式属性，可以使用关键帧的�
 
 
 
+移动端1px的问题
+在写移动端时，需要在meta中设置init-scale以及max-scale为1，主要是为了保证移动端的viewport的宽度为设备的宽度。引起1px border变粗的原因是dpr（物理像素与独立像素的比值）不为1。解决的方式主要有以下几种。
+- 根据设备像素比设置媒体查询，比如dpr为2的时候，将border设置为0.5。但ios8以下是不允许设置0.几px的
+- 第二是根据viewport动态设置meta的init-scale以及max-scale。，如果dpr是2的话，那么scale为0.5；
+- 使用border-images
+- 第四种是使用transform以及伪元素befor或者after,再根据媒体查询以及dpr进行缩放。

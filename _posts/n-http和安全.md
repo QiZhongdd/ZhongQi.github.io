@@ -19,7 +19,7 @@
 504：服务器作为网关或者代理服务器向上游发起请求时，未能及时响应.504一般都是和nginx的配置有关。比如nginx设置了超时时间，当在超时时间内没有收到请求就会给客户端返回504
 
 
-常见的请求方法：
+**常见的请求方法：**
 - get 获取内容
 - post 用于新增内容，或者上传文件
 - head请求，类似于get，但不会返回响应体，只能获取到报头
@@ -30,7 +30,7 @@
 - options 请求，用于服务端验证实际请求是否合法
 - connect 请求预留给http1.1能够将链接改为管道方式的代理服务器
 
-options请求
+**options请求**
 options请求被称为预检请求，服务端用来验证实际请求是否合法，预见请求会发送两个请求头，Access-control-request-headers和Access-control-request-methods表示请求的方法和请求头
 响应头有
 
@@ -99,6 +99,7 @@ DSA 证书不再允许在 TLS 1.3 中使用
 **syn是握手信号，ack是握手信号**
 
 # tcp:四次挥手
+
 - 不管是客户端还是服务端都可以主动发起断开，当断开连接时，主动方会向被动方发送一个FIN报文段，主动方进入FIN_WAIT_1状态。
 - 被动方收到FIN标记的报文段后，不会马上断开连接，首先会发送一个ACK包给主动方，通知对方自己的应用程序的要关闭连接了，进入close_wait状态，主动方收到ack报文后进入FIN_WAIT-2状态，这时主动方已经没有数据要发送了，但是被动方若发送数据，主动方依然要接受。。
 - 被动方向主动方发送一个带FIN+ack的报文，LAST-ACK（最后确认）状态。
@@ -130,11 +131,6 @@ restful风格api特点：协议使用https、域名在专有协议下、将版�
 
 **dns**
 IP地址通过DNS解析获取，DNS解析首先会从缓存中查看是否解析过，如果没有那么会从本地操作系统的host中是否有映射，然后查看localDNS服务器，如果localDNS服务器没有，localDNS请求根域名的DNS服务器，跟域名服务器会返回主域名服务器所在的IP，localDNS再根据主域名IP请求对应的name server服务器的IP地址，然后在请求对应的name server服务器根据映射表获取到目标的IP地址。
-
-**CDN访问流程：**
-
-所谓的cdn简称为内容分发网络，它的作用将内容保存在离用户较近的网络边缘节点上，从而提高访问速度。
-cdn的解析主要有以下几个步骤，在没有缓存的情况下，首先会向localDns发起域名解析请求，localDns会向根域名服务器发起请求，根域名服务器会返回授权服务器所在的地址，localDns会向域名授权服务器发起请求，域名授权服务器会返回域名记录，一般是CNAME,所谓的CNAME一般是指能根据一个域名获取到ip。获取到域名记录后，智能DNS会根据自己的算法和策略去解析最适合用户cdn节点的ip返回给localDns，localDns会返回给用户，然后发起请求获取地址。简单点说就是通过修改dns解析，通过dns引导用户到cache服务器获取资源，加快请求速度。整个过程最重要的设备就是智能DNS,他能根据自己的算法和策略获取到最适合的cdn节点，同时能够与每个cdn节点保持联系，获取cdn的压力和相关的状态信息。
 
 
 
@@ -177,3 +173,56 @@ window.onbeforeunload = function() {
 options 请求被称为预检查请求，服务端可以根据预检请求判断接下来是否接受下一次请求。预检请求头有Access-Control-Request-Method和Access-Control-Request-Header表示实际请求的方法和请求头。服务端的预检响应有Access-Control-Allow-Methods返回了服务端允许的请求，包含GET/HEAD/PUT/PATCH/POST/DELETE、Access-Control-Allow-Credentials、Access-Control-Allow-Origin	允许跨域请求的域名，这个可以在服务端配置一些信任的域名白名单、Access-Control-Request-Headers	客户端请求所携带的自定义首部字段content-type。
  跨域请求时，OPTIONS请求触发条件请求方法为PUT/DELETE/CONNECT/OPTIONS/TRACE/PATCH，人为设置除了以下集合外的字段Accept/Accept-Language/Content-Language/Content-Type/DPR/Downlink/Save-Data/Viewport-Width/Width，. Content-Type 的值不属于下列之一application/x-www-form-urlencoded、multipart/form-data、text/plain。
  优化OPTIONS请求：Access-Control-Max-Age设置缓存时间或者避免触发。
+
+
+**三、HTTPS和HTTP有什么区别**
+
+1.HTTPS是加密的传输协议，HTTP是文本传输协议；
+
+2.HTTPS需要SSL证书，但HTTP不需要；
+
+3.HTTPS比HTTP更安全，对搜索引擎更友好，并且对SEO有益。
+
+4.HTTPS标准端口443，HTTP标准端口80；
+
+5.HTTPS基于传输层，HTTP基于应用程序层；
+
+6.HTTPS在浏览器中显示绿色的安全锁，但不显示HTTP；
+
+**socket**
+
+socket并不是一个协议，他是应用层与传输层的一个抽象层，它把tcp/ip层复杂的操作抽象为几个简单的接口进行供应用层进行调用，以实现进程在网络中通信。socket是全双工的。socket是一个特殊的文件，他只有文件描述符，进程可以打开一个socket，并且可以像文件一样进行读写操作，不必关心数据在网络是如何传输的，socket是链接在tcp链接的两端。socket是基于tcp实现的，**绑定进程**通过传输层的协议和端口号的唯一标识绑定这个端口的进程。**绑定端口**服务端在启动端口时会绑定一个端口进行服务，而客户端在链接请求的时候会被随机分配一个端口。
+
+**socket和websocket的区别**
+socket是应用层和传输层的抽象，将复杂的Tcp/ip协议影藏在socket的接口后，只对应用层暴露简单的接口。而websocke是应用层协议，他是基于tcp实现的，同时接住了http协议建立连接。
+websocket的连接过程
+- 服务端与客户端建立tcp连接、建立http连接
+- 客户端像服务端发起一个http请求，请求头中得包含upgrate：websocket，connection:upgrate，表示升级到webscoket连接
+- 服务端进行回应，回应的响应头也包含upgrate：websocket，connection:upgrate，。表示同意升级协议，然后用websocke进行通信
+
+
+**url和uri**
+
+统一资源标识符(Uniform Resource Identifier, URI)：是一个用于标识某一互联网资源名称的字符串
+
+统一资源定位符(Uniform Resource Locator, URL)：是一个用于标识和定位某一互联网资源名称的字符串。
+Url一般有以下部分组成
+Scheme: 通信协议，一般为http、https等；
+Host: 服务器的域名主机名或ip地址；
+Port: 端口号，此项为可选项，默认为80；
+Path: 目录，由“/”隔开的字符串，表示的是主机上的目录或文件地址；
+Query: 查询，此项为可选项，可以给动态网页传递参数，用“&”隔开，每个参数的名和值用“=”隔开；
+Fragment: 信息片段，字符串，用于指定网络资源中的某片断；
+
+# http7层协议
+
+网络七层协议由下往上分别为物理层、数据链路层、网络层、传输层、会话层、表示层和应用层。其中物理层、数据链路层和网络层通常被称作媒体层，是网络工程师所研究的对象；传输层、会话层、表示层和应用层则被称作主机层，是用户所面向和关心的内容
+
+# TCP/IP五层模型
+
+TCP/IP五层模型的协议分为：应用层、传输层、网络层、数据链路层和物理层
+
+
+
+
+

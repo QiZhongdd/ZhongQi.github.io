@@ -28,10 +28,12 @@ function extend(subClass,superClass){
     throw new error('error')
   }
   subClass.prototype=Object.create(superClass.prototype,{
-    constructor:subClass
+    constructor:{
+      value: subClass,
      enumerable: false,
      writable:true,
      configurable: true
+    }
   })
   // 子类继承父类的静态属性方法
   superClass&&Object.setPrototypeOf(subClass,superClass);
@@ -47,58 +49,6 @@ function extend(subClass,superClass){
 - 接口隔离原则（I）：不能强迫用户去依赖那些他们不使用的接口，所以使用多个专门的接口总是要好于使用单一的总接口
 - 依赖反转（D）：高层模块不能依赖于底层模块，二者都应该依赖于抽象，抽象接口不能依赖于具体的实现。而具体的实现应该依赖于抽象接口
 
-**redux**
-
-```
-
-
-function redux(reducer,state={}){
-  const listeners=[]
-  function getState(){
-    return state
-  }
-  function subscribe(listener){
-    listeners.push(listener)
-    return function unsubscribe(){
-      const index=listeners.indexOf(listener);
-      listeners.splice(index,1)
-    }
-  }
-  function dispatch(action){
-    reducer(state,action.type)
-    listeners.forEach(lis=>{
-      lis()
-    })
-  }
-  function replaceReducer(reducer){
-    reducer=reducer;
-    dispatch({type:symbol})
-  }
-  return { getState,subscribe,dispatch,replaceReducer }
-}
-
-const logMiddleWare=store=>next=>action=>{
-  console.log(store)
-  next(action)
-}
-
-function applyMiddleware(mids){
-  return function(oldCreateStore){
-    return function(reducer,state){
-      const store=oldCreateStore(reducer,state);
-      const state=store.getState();
-      const chain=mids.map(fn=>fn(state))
-      const dispatch=compose(chain)(store.dispatch)
-      return {...store,dispatch}
-    }
-  }
-}
-
-function compose(fns){
-  fns.reduce((a,b)=>(...args)=>a(b(...args)))
-}
-
-```
 
 // 深拷贝，考虑递归
 
